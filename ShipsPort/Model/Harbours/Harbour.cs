@@ -128,7 +128,7 @@ public class Harbour : IHarbour
                                 AddIntoTimeline(new(_fourthShips[fourthShip], TimeAction.FourthShipArrival));
                                 
                             }
-                            Console.WriteLine(
+                            if (_options.PrintSteps) Console.WriteLine(
                                 $"{t}: корабль {pier.Ship.Type} уплыл из {_piers.IndexOf(pier) + 1} пирс");
                             pier.Ship = null;
                         }
@@ -144,7 +144,7 @@ public class Harbour : IHarbour
                                 _options.FourthShipArrivalMax);
                             AddIntoTimeline(new(_fourthShips[fourthStormShip], TimeAction.FourthShipArrival));
                         }
-                        Console.WriteLine(
+                        if (_options.PrintSteps) Console.WriteLine(
                             $"{t}: корабль {pier.Ship.Type} уплыл из {_piers.IndexOf(pier) + 1} пирс");
                         pier.Ship = null;
 
