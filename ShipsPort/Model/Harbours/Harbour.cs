@@ -9,7 +9,8 @@ public enum TimeAction
     StormEnd,
     ShipArrival,
     ShipLoaded,
-    ShipAfterStorm
+    ShipAfterStorm,
+    FourthShipArrival
 }
 
 public class Harbour : IHarbour
@@ -40,7 +41,7 @@ public class Harbour : IHarbour
         _piers = [];
         for (int i = 0; i < _options.PiersAmount; i++) _piers.Add(new Pier());
 
-        for (int i = 0; i < _options.FourthShipAmount; i++) _fourthShips.Add(_options.FourthShip.Clone() as IShip, 1);
+        for (int i = 0; i < _options.FourthShipAmount; i++) _fourthShips.Add(_shipFactory.CreateShip(ShipType.Fourth), 0);
     }
 
     public Task<HarbourStatistics> Open(int hours)
@@ -58,6 +59,9 @@ public class Harbour : IHarbour
 
             AddIntoTimeline(new(nextShipTime, TimeAction.ShipArrival));
             AddIntoTimeline(new(nextStormTime, TimeAction.StormBegin));
+
+            foreach (var ship in _fourthShips)
+                AddIntoTimeline(new(0, TimeAction.FourthShipArrival));
 
             int t = 0;
             while (t < hours)
@@ -103,6 +107,9 @@ public class Harbour : IHarbour
                         pier = _timeLinePiers.First(p => Equals(p.Value, tuple)).Key;
 
                         stats.ShipsLoaded++;
+                        if (stats.LoadingProbability.ContainsKey(t))
+                            stats.LoadingProbability[t] = (float)stats.ShipsLoaded / stats.ShipsArrived;
+                        else stats.LoadingProbability.Add(t, (float)stats.ShipsLoaded / stats.ShipsArrived);
 
                         _timeLinePiers.Remove(pier);
                         if (_isStorming)
@@ -113,19 +120,47 @@ public class Harbour : IHarbour
                             _timeLinePiers.Add(pier, newTuple);
                         }
                         else
+                        {
+                            if (pier.Ship is { Type: ShipType.Fourth } fourthShip)
+                            {
+                                _fourthShips[fourthShip] = t + _random.Next(_options.FourthShipArrivalMin,
+                                    _options.FourthShipArrivalMax);
+                                AddIntoTimeline(new(_fourthShips[fourthShip], TimeAction.FourthShipArrival));
+                                
+                            }
+                            Console.WriteLine(
+                                $"{t}: корабль {pier.Ship.Type} уплыл из {_piers.IndexOf(pier) + 1} пирс");
                             pier.Ship = null;
+                        }
 
 
                         break;
                     case TimeAction.ShipAfterStorm:
                         pier = _timeLinePiers.First(p => Equals(p.Value, tuple)).Key;
 
+                        if (pier.Ship is { Type: ShipType.Fourth } fourthStormShip)
+                        {
+                            _fourthShips[fourthStormShip] = t + _random.Next(_options.FourthShipArrivalMin,
+                                _options.FourthShipArrivalMax);
+                            AddIntoTimeline(new(_fourthShips[fourthStormShip], TimeAction.FourthShipArrival));
+                        }
+                        Console.WriteLine(
+                            $"{t}: корабль {pier.Ship.Type} уплыл из {_piers.IndexOf(pier) + 1} пирс");
                         pier.Ship = null;
 
                         _timeLinePiers.Remove(pier);
 
                         break;
+                    case TimeAction.FourthShipArrival:
+                        var ship = _fourthShips.First(pair => pair.Value == t).Key;
+                        _queue.Enqueue(ship);
+                        _fourthShips[ship] = -1;
+
+                        if (_options.PrintSteps) Console.WriteLine($"{t}: прибыл корабль типа {ShipType.Fourth}");
+                        stats.ShipsArrived++;
+                        break;
                 }
+
 
                 if (_queue.Count > 0)
                 {
@@ -136,6 +171,7 @@ public class Harbour : IHarbour
                         GetShipFromQueue(pier, t, stats);
                         Tuple<int, TimeAction> newTuple = new(t + pier.Time, TimeAction.ShipLoaded);
                         AddIntoTimeline(newTuple);
+
                         _timeLinePiers.Add(pier, newTuple);
                     }
                 }
@@ -174,8 +210,9 @@ public class Harbour : IHarbour
                 break;
         }
 
+        ship.WaitingTime = realTime;
         pier.Set(ship,
-             ship.LoadingTime + _random.Next(-ship.LoadingTimeInterval, ship.LoadingTimeInterval + 1));
+            ship.LoadingTime + _random.Next(-ship.LoadingTimeInterval, ship.LoadingTimeInterval + 1));
         stats.LoadingTimes.Add(pier.Time);
 
         if (_options.PrintSteps)

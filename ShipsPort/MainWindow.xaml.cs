@@ -35,7 +35,8 @@ public partial class MainWindow : Window
         float eps = 0.01f;
 
         int n = 100;
-        int prevN = 8000;
+        int prevN = 8640;
+        
         
         //do
         //{
@@ -49,11 +50,11 @@ public partial class MainWindow : Window
         HarbourOptions options = new()
         {
             PiersAmount = 3,
-           // StormMax = 200,
-           // StormMin = 100,
-          //  StormEx = 500,
-            FourthShipAmount = 0,
-            PrintSteps = true
+            // StormMax = 200,
+            // StormMin = 100,   
+            // StormEx = 500,
+            FourthShipAmount = 3,
+            PrintSteps = false
         };
         Harbour harbour = new Harbour(new ShipFactory(), options);
         stats = await harbour.Open(n);

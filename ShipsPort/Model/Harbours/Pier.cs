@@ -6,6 +6,7 @@ public class Pier : IPier
 {
     private int _time = 0;
 
+    public Guid Id { get; set; } = Guid.NewGuid();
     public IShip? Ship { get; set; } = null;
 
     public int Time
@@ -18,5 +19,10 @@ public class Pier : IPier
     {
         Ship = ship;
         Time = time;
+    }
+    
+    public bool Equals(IPier? other)
+    {
+        return other != null && other.Id == Id;
     }
 }

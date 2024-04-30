@@ -2,8 +2,9 @@
 
 namespace ShipsPort.Model.Harbours;
 
-public interface IPier
+public interface IPier : IEquatable<IPier>
 {
+    public Guid Id { get; set; }
     public IShip? Ship { get; set; }
     public int Time { get; set; }
 
