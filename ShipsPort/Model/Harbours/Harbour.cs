@@ -75,10 +75,10 @@ public class Harbour : IHarbour
                 switch (tuple.Item2)
                 {
                     case TimeAction.ShipArrival:
-                        var type = AddShipToQueue();
+                        var newShip = AddShipToQueue();
                         nextShipTime = _random.Next(_options.ArrivalMin, _options.ArrivalMax);
-
-                        if (_options.PrintSteps) Console.WriteLine($"{t}: прибыл корабль типа {type}");
+                        newShip.WaitingTime = t;
+                        if (_options.PrintSteps) Console.WriteLine($"{t}: прибыл корабль типа {newShip.Type}");
                         stats.ShipsArrived++;
 
                         AddIntoTimeline(new(t + nextShipTime, TimeAction.ShipArrival));
@@ -210,10 +210,11 @@ public class Harbour : IHarbour
                 break;
         }
 
-        ship.WaitingTime = realTime;
         pier.Set(ship,
             ship.LoadingTime + _random.Next(-ship.LoadingTimeInterval, ship.LoadingTimeInterval + 1));
+        
         stats.LoadingTimes.Add(pier.Time);
+        stats.WaitingTimes.Add(realTime - ship.WaitingTime);
 
         if (_options.PrintSteps)
             Console.WriteLine(
@@ -230,7 +231,7 @@ public class Harbour : IHarbour
             _timeLine.Add(tuple);
     }
 
-    private ShipType AddShipToQueue()
+    private IShip AddShipToQueue()
     {
         double p = _random.NextDouble();
         ShipType type = ShipType.First;
@@ -241,10 +242,12 @@ public class Harbour : IHarbour
             rate += pair.Value;
             type = pair.Key;
             if (p <= rate) break;
+
         }
 
-        _queue.Enqueue(_shipFactory.CreateShip(type));
+        var ship = _shipFactory.CreateShip(type);
+        _queue.Enqueue(ship);
 
-        return type;
+        return ship;
     }
 }
